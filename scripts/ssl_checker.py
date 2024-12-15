@@ -48,7 +48,7 @@ def write_results(file_path, successful_domains, failed_domains):
         for index, entry in enumerate(failed_domains, start=1):
             output_file.write(f"{index}. {entry}\n")
 
-    print(f"Data successfully written to {file_path}")
+    print(f"Data successfully written tdomain in domainso {file_path}")
 
 # Основной код
 if __name__ == "__main__":
@@ -70,10 +70,17 @@ if __name__ == "__main__":
     for domain in domains:
         expiration_date = get_ssl_certificate_expiration_date(domain)
         if expiration_date:
-            remaining_days = days_until_expiration(expiration_date)
-            formatted_date = datetime.strptime(expiration_date.replace(" GMT", ""), '%b %d %H:%M:%S %Y').strftime('%d %B %Y')
-            successful_ssl_domains.append(f"{domain} - {formatted_date} ({remaining_days} days remaining)")
+            # Преобразуем дату в объект datetime
+            expiration_datetime = datetime.strptime(expiration_date.replace(" GMT", ""), '%b %d %H:%M:%S %Y').replace(tzinfo=timezone.utc)
+            formatted_date = expiration_datetime.strftime('%d.%m.%y')
+            successful_ssl_domains.append((domain, expiration_datetime, formatted_date))
         else:
             failed_ssl_domains.append(f"{domain} - Failed to retrieve certificate information.")
 
-    write_results(f'{results_dir}/ssl_expiration_dates.txt', successful_ssl_domains, failed_ssl_domains)  # Путь к выходному файлу
+    # Сортируем успешные домены по дате истечения
+    successful_ssl_domains.sort(key=lambda x: x[1])  # Сортируем по оригинальной дате
+
+    # Форматируем вывод для записи в файл
+    formatted_successful_ssl_domains = [f"{domain} - {formatted_date}" for domain, _, formatted_date in successful_ssl_domains]
+
+    write_results(f'{results_dir}/ssl_expiration_dates.txt', formatted_successful_ssl_domains, failed_ssl_domains)  # Путь к выходному файлу

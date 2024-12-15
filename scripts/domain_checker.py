@@ -14,12 +14,11 @@ def get_domain_info(domain, api_key):
         print(f"Error retrieving data for domain {domain}: {response.status_code} - {response.text}")
         return None
 
-# Функция для вычисления оставшихся дней до окончания домена
-def days_until_expiration(expiration_date):
+# Функция для получения даты истечения
+def get_expiration_date(expiration_date):
+    # Удаляем время и временную зону из строки
     expiration_date = expiration_date.split('T')[0]  # Берем только дату
-    expiration_date = datetime.strptime(expiration_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
-    remaining_days = (expiration_date - datetime.now(timezone.utc)).days
-    return remaining_days
+    return datetime.strptime(expiration_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
 
 # Функция для чтения доменов из файла
 def read_domains(file_path):
@@ -56,7 +55,7 @@ if __name__ == "__main__":
         print("The domains.txt file is empty. Please add some domains.")
         sys.exit(1)
 
-    api_key = 'your_key'
+    api_key = 'at_lTK7d5NK2ytvtkI0IDM8d2AFZZqU5'
 
     successful_domains = []
     failed_domains = []
@@ -68,9 +67,10 @@ if __name__ == "__main__":
             if 'WhoisRecord' in domain_info and 'registryData' in domain_info['WhoisRecord']:
                 expires_date = domain_info['WhoisRecord']['registryData'].get('expiresDate')
                 if expires_date:
-                    remaining_days = days_until_expiration(expires_date)
-                    formatted_date = datetime.strptime(expires_date.split('T')[0], '%Y-%m-%d').strftime('%d %B %Y')
-                    successful_domains.append(f"{domain} - {formatted_date} ({remaining_days} days remaining)")
+                    # Получаем дату истечения
+                    expiration_date = get_expiration_date(expires_date)
+                    formatted_date = expiration_date.strftime('%d.%m.%y')  # Форматируем дату как DD.MM.YY
+                    successful_domains.append((domain, expiration_date, formatted_date))  # Сохраняем дату как datetime
                 else:
                     failed_domains.append(f"{domain} - No expiration date found.")
             else:
@@ -78,4 +78,10 @@ if __name__ == "__main__":
         else:
             failed_domains.append(f"{domain} - Failed to retrieve information.")
 
-    write_results(f'{results_dir}/domain_expiration_dates.txt', successful_domains, failed_domains)  # Путь к выходному файлу
+    # Сортировка успешных доменов по дате истечения
+    successful_domains.sort(key=lambda x: x[1])  # Сортируем по datetime
+
+    # Форматирование успешных доменов для записи
+    formatted_successful_domains = [f"{domain} - {date}" for domain, _, date in successful_domains]
+
+    write_results(f'{results_dir}/domain_expiration_dates.txt', formatted_successful_domains, failed_domains)  # Путь к выходному файлу
