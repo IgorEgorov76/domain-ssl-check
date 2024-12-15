@@ -55,7 +55,7 @@ if __name__ == "__main__":
         print("The domains.txt file is empty. Please add some domains.")
         sys.exit(1)
 
-    api_key = 'at_lTK7d5NK2ytvtkI0IDM8d2AFZZqU5'
+    api_key = 'your_key'
 
     successful_domains = []
     failed_domains = []
